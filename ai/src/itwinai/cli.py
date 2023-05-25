@@ -39,11 +39,16 @@ def train(
     """
     import copy
     import shutil
+    import logging
     import mlflow
     from lightning.pytorch.cli import LightningCLI
     from omegaconf import DictConfig, OmegaConf
 
-    from itwinai.utils import load_yaml_with_deps, flatten_dict
+    from itwinai.utils import (
+        load_yaml_with_deps,
+        flatten_dict,
+        dynamically_import_module_path
+    )
     from itwinai.plmodels.base import (
         ItwinaiBasePlModule,
         ItwinaiBasePlDataModule
@@ -62,6 +67,13 @@ def train(
     train_config = OmegaConf.merge(train_config, cli_conf)
     # print(OmegaConf.to_yaml(train_config))
     train_config = OmegaConf.to_container(train_config, resolve=True)
+
+    # Load external modules
+    external_modules = train_config.get('other-modules', [])
+    for mod_path in external_modules:
+        logging.info(f"Importing external module '{mod_path}'")
+        mdl, names = dynamically_import_module_path(mod_path)
+        globals().update({k: getattr(mdl, k) for k in names})
 
     # Setup logger
     if os.path.exists('checkpoints'):
@@ -98,6 +110,13 @@ def train(
         # Save config file used for this specific training run
         # for reproducibility
         mlflow.log_artifact(config)
+
+        # Save external modules imported at the beginning
+        for mod_path in external_modules:
+            mlflow.log_artifact(
+                local_path=mod_path,
+                artifact_path="external_modules"
+            )
 
         # Update lightning MLFlow logger constructor args
         # Infer MlFlow conf from pre-configured mlflow client
@@ -162,6 +181,7 @@ def predict(
     Apply a pre-trained neural network to a set of unseen data.
     """
     import logging
+    import shutil
     import mlflow
     from mlflow.exceptions import MlflowException
     from lightning.pytorch.cli import LightningCLI
@@ -169,11 +189,16 @@ def predict(
     import torch
     from omegaconf import DictConfig, OmegaConf
 
-    from itwinai.utils import load_yaml_with_deps, load_yaml
+    from itwinai.utils import (
+        load_yaml_with_deps,
+        load_yaml,
+        dynamically_import_module_path
+    )
     from itwinai.plmodels.base import (
         ItwinaiBasePlModule,
         ItwinaiBasePlDataModule
     )
+    TMP_DOWNLOADS = 'tmp/'
 
     # Replicate args under cli field, to be used in imported config files
     cli_conf = dict(cli=dict(
@@ -189,54 +214,77 @@ def predict(
     ml_conf = OmegaConf.merge(ml_conf, cli_conf)
     # print(OmegaConf.to_yaml(ml_conf))
     ml_conf = OmegaConf.to_container(ml_conf, resolve=True)
-    ml_conf = ml_conf['inference']
+    inference_conf = ml_conf['inference']
 
     os.makedirs(predictions_location, exist_ok=True)
-
     mlflow.set_tracking_uri('file:' + ml_logs)
 
     # Check if run ID exists
     try:
-        mlflow.get_run(ml_conf['run_id'])
+        mlflow.get_run(inference_conf['run_id'])
         # mlflow_client.get_run(ml_conf['run_id'])
     except MlflowException:
         logging.warning(
-            f"Run ID '{ml_conf['run_id']}' not found! "
+            f"Run ID '{inference_conf['run_id']}' not found! "
             "Using latest run available for experiment "
-            f"'{ml_conf['experiment_name']}' instead."
+            f"'{inference_conf['experiment_name']}' instead."
         )
         runs = mlflow.search_runs(
-            experiment_names=[ml_conf['experiment_name']],
-
+            experiment_names=[inference_conf['experiment_name']],
         )
         new_run_id = runs[runs.status == 'FINISHED'].iloc[0]['run_id']
-        ml_conf['run_id'] = new_run_id
+        inference_conf['run_id'] = new_run_id
         logging.warning(f"Using Run ID: '{new_run_id}'")
+
+    # Cleanup TMP_DOWNLOADS
+    if os.path.exists(TMP_DOWNLOADS):
+        shutil.rmtree(TMP_DOWNLOADS)
+
+    # Download external modules, if present
+    try:
+        ext_mdl_root = mlflow.artifacts.download_artifacts(
+            run_id=inference_conf['run_id'],
+            artifact_path="external_modules",
+            dst_path=TMP_DOWNLOADS,
+            tracking_uri=mlflow.get_tracking_uri()
+        )
+        external_modules = [
+            os.path.join(ext_mdl_root, filename)
+            for filename in os.listdir(ext_mdl_root)
+        ]
+    except MlflowException:
+        external_modules = []
+
+    # Load external modules
+    for mld_path in external_modules:
+        logging.info(f"Importing external module '{mld_path}'")
+        mdl, names = dynamically_import_module_path(mld_path)
+        globals().update({k: getattr(mdl, k) for k in names})
 
     # Download training configuration
     train_conf_path = mlflow.artifacts.download_artifacts(
-        run_id=ml_conf['run_id'],
-        artifact_path=ml_conf['train_config_artifact_path'],
-        dst_path='tmp/',
+        run_id=inference_conf['run_id'],
+        artifact_path=inference_conf['train_config_artifact_path'],
+        dst_path=TMP_DOWNLOADS,
         tracking_uri=mlflow.get_tracking_uri()
     )
 
     # Download last ckpt
     ckpt_path = mlflow.artifacts.download_artifacts(
-        run_id=ml_conf['run_id'],
-        artifact_path=ml_conf['ckpt_path'],
-        dst_path='tmp/',
+        run_id=inference_conf['run_id'],
+        artifact_path=inference_conf['ckpt_path'],
+        dst_path=TMP_DOWNLOADS,
         tracking_uri=mlflow.get_tracking_uri()
     )
 
     # Instantiate PL model
     lightning_conf = load_yaml(train_conf_path)
-    if ml_conf['conf'] is not None:
+    if inference_conf['conf'] is not None:
         # Override training configuration with the one
         # provided during inference.
         # Example: predictions dataset is different
         # from training dataset
-        lightning_conf.update(ml_conf['conf'])
+        lightning_conf.update(inference_conf['conf'])
 
     # Reset argv before using Lightning CLI
     old_argv = sys.argv

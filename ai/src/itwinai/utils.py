@@ -1,8 +1,10 @@
 """
 Utilities for itwinai package.
 """
-from typing import Dict
+from typing import Dict, Any, List, Tuple
 import os
+import sys
+import importlib
 from collections.abc import MutableMapping
 import yaml
 from omegaconf import OmegaConf
@@ -76,6 +78,38 @@ def dynamically_import_class(name: str):
     mod = __import__(module, fromlist=[class_name])
     klass = getattr(mod, class_name)
     return klass
+
+
+def dynamically_import_module_path(module_path: str) -> Tuple[Any, List[str]]:
+    """
+    Dynamically loads a module from its path on file system.
+    To import all from the loaded module, do:
+
+    >>> mdl, names = dynamically_import_module_path('path/to/module.py')
+    >>> globals().update({k: getattr(mdl, k) for k in names})
+
+    Args:
+        module_path (str): File system path to module.
+
+    Returns:
+        Tuple[Any, List[str]]: Module object for loaded module and list
+            of names (__all__) to load from that module.
+    """
+    # Load module from path
+    spec = importlib.util.spec_from_file_location("custom", module_path)
+    mdl = importlib.util.module_from_spec(spec)
+    sys.modules["custom"] = mdl
+    spec.loader.exec_module(mdl)
+
+    # Get all names to import
+
+    # is there an __all__?  if so respect it
+    if "__all__" in mdl.__dict__:
+        names = mdl.__dict__["__all__"]
+    else:
+        # otherwise we import all names that don't begin with _
+        names = [x for x in mdl.__dict__ if not x.startswith("_")]
+    return mdl, names
 
 
 def flatten_dict(

@@ -15,6 +15,7 @@ setup(
     },
     # Pip dependencies
     install_requires=[
-        'jsonargparse[signatures]>=4.17.0'
+        'jsonargparse[signatures]>=4.17.0',
+        'h5py'
     ]
 )

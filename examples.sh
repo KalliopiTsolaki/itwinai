@@ -70,3 +70,7 @@ micromamba activate ./ai/.venv-pytorch && \
 
 # According to docs/README.md
 cd docs && bundle exec jekyll serve
+
+
+micromamba run -p ./.venv \
+    python run-workflow.py -f ./use-cases/cern_3dgan/training-workflow.yml

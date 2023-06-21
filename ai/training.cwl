@@ -48,7 +48,7 @@ inputs:
       # 'position' and 'prefix' are used to pass this input to the command line tool.
 
   preprocessingFlag:
-    type: File
+    type: File?
     # Specifies that the 'preprocessingFlag' input is a file.
 
 outputs:

@@ -1,0 +1,26 @@
+# Configuration file for use case metadata
+# Load with OmegaConf
+
+# Use case root location. End without path '/' char!
+root: ./use-cases/cern_3dgan
+
+# AI folder location. End without path '/' char!
+ai-root: ./ai
+
+# Datasets registry
+datasets:
+  preproc-images:
+    doc: Original .h5 data - Electrons - Restricted energy Ep=100-200 GeV
+    location: ${root}/data/Ele_VarAngleMeas/*.h5
+  ml-logs:
+    doc: MLflow tracking URI for local logging
+    location: http://127.0.0.1:${mlflow.port}
+  mlflow-backend-store-uri:
+    doc: MLFlow server storage location
+    location: ${root}/data/ml-logs
+  ml-predictions:
+    doc: predictions on unseen data
+    location: ${root}/data/ml-predictions
+
+mlflow:
+  port: 5000

@@ -27,7 +27,7 @@ steps:
         path: ${datasets.mlflow-backend-store-uri.location}
         port: ${mlflow.port}
   - ml-training:
-      doc: Train a neural network to classify MNIST images
+      doc: Train 3DGAN generator and discriminator networks
       command: itwinai train
       env: 
         file: ${ai-root}/env-files/pytorch-env-gpu.yml

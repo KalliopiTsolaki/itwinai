@@ -114,7 +114,7 @@ class MyDataModule(ItwinaiBasePlDataModule):
             #(X, Y, ang, ecal) = self.dataset[10]
             #print(Y)
             dataset_length = len(self.dataset)
-            split_point = dataset_length // 10
+            split_point = dataset_length // 2
             self.train_dataset, self.val_dataset = torch.utils.data.random_split(self.dataset, [split_point, dataset_length - split_point])
             #self.val_dataset = MyDataset(self.data_dir, train=False)
 
@@ -246,7 +246,7 @@ class ThreeDGAN(ItwinaiBasePlModule):
         print("calculating real_batch_loss...")
         real_batch_loss = self.compute_global_loss(
             labels, predictions, self.loss_weights)
-        self.log("real_batch_loss", sum(real_batch_loss), prog_bar=True)
+        self.log("real_batch_loss", sum(real_batch_loss), prog_bar=True, on_step=True, on_epoch=True)
         print("real batch disc train")
         #the following 3 lines correspond to
         #gradients = tape.gradient(real_batch_loss, discriminator.trainable_variables)
@@ -266,7 +266,7 @@ class ThreeDGAN(ItwinaiBasePlModule):
 
         fake_batch_loss = self.compute_global_loss(
             labels, predictions, self.loss_weights)
-        self.log("fake_batch_loss", sum(fake_batch_loss), prog_bar=True)
+        self.log("fake_batch_loss", sum(fake_batch_loss), prog_bar=True, on_step=True, on_epoch=True)
         print("fake batch disc train")
         #the following 3 lines correspond to
         #gradients = tape.gradient(fake_batch_loss, discriminator.trainable_variables)
@@ -292,7 +292,7 @@ class ThreeDGAN(ItwinaiBasePlModule):
             predictions = self.discriminator(generated_images)
             loss = self.compute_global_loss(
                 labels, predictions, self.loss_weights)
-            self.log("loss", sum(loss), prog_bar=True)
+            self.log("gen_loss", sum(loss), prog_bar=True, on_step=True, on_epoch=True)
             print("gen train")
             optimizer_generator.zero_grad()
             self.manual_backward(sum(loss))
@@ -302,7 +302,10 @@ class ThreeDGAN(ItwinaiBasePlModule):
             for el in loss:
                 gen_losses_train.append(el)
 
-        #generator_loss = [(a + b) / 2 for a, b in zip(*self.gen_losses)]
+        avg_generator_loss = sum(gen_losses_train) / len(gen_losses_train)
+        self.log("generator_loss", avg_generator_loss.item(), prog_bar=True, on_step=True, on_epoch=True)
+        #avg_generator_loss = [(a + b) / 2 for a, b in zip(*gen_losses_train)]
+        #self.log("generator_loss", sum(avg_generator_loss), prog_bar=True, on_step=True, on_epoch=True)
 
         '''
         # I'm not returning anything as in pl you do not return anything when you back-propagate manually

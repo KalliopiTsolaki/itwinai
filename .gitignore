@@ -9,6 +9,9 @@ tmp*
 checkpoints/
 mamba*
 
+# Containers
+*.sif
+
 # Custom envs
 .venv*
 

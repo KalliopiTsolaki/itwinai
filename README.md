@@ -9,6 +9,7 @@ for a quick overview of this platform for advanced AI/ML workflows in digital tw
 If you want to integrate a new use case, you can follow this
 [step-by-step guide](https://intertwin-eu.github.io/T6.5-AI-and-ML/docs/How-to-use-this-software.html).
 
+<<<<<<< HEAD
 
 
 ### Requirements
@@ -23,6 +24,9 @@ micromamba run -p ./.venv python run-workflow.py -f ./use-cases/cyclones/workflo
 
 ## Installation
 
+=======
+### Requirements
+>>>>>>> 6289af8 (updated Readme for containers)
 
 
 
@@ -31,6 +35,7 @@ micromamba run -p ./.venv python run-workflow.py -f ./use-cases/cyclones/workflo
 =======
 - Linux environment. Windows and macOS were never tested.
 
+<<<<<<< HEAD
 
 
 
@@ -42,6 +47,8 @@ micromamba run -p ./.venv python run-workflow.py -f ./use-cases/cyclones/workflo
 ```
 
 =======
+=======
+>>>>>>> 6289af8 (updated Readme for containers)
 It is suggested to refer to the
 [Manual installation guide](https://mamba.readthedocs.io/en/latest/micromamba-installation.html#umamba-install).
 
@@ -67,6 +74,10 @@ echo 'PATH="$(dirname $MAMBA_EXE):$PATH"' >> ~/.bashrc
 
 ```
 
+<<<<<<< HEAD
+=======
+and
+>>>>>>> 6289af8 (updated Readme for containers)
 
 
 

@@ -8,6 +8,8 @@ tmp*
 *.txt
 checkpoints/
 mamba*
+MNIST
+mllogs
 
 # Containers
 *.sif

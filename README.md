@@ -9,40 +9,60 @@ for a quick overview of this platform for advanced AI/ML workflows in digital tw
 If you want to integrate a new use case, you can follow this
 [step-by-step guide](https://intertwin-eu.github.io/T6.5-AI-and-ML/docs/How-to-use-this-software.html).
 
-## CMCC Use-case:
-To run do: 
-```
-micromamba run -p ./.venv python run-workflow.py -f ./use-cases/cyclones/workflows/workflow-train.yml
-```
 
-## Installation
+## Requirements
 
-The containers were build using Apptainer version 1.1.8-1.el8
+The containers were build using Apptainer version 1.1.8-1.el8 and podman version 4.4.1.
 
-### Building the containers
+### Base Container
 
 The container are built on top of the [NVIDIA PyTorch NGC Containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch). The NGC containers come with preinstalled libraries such as CUDA, cuDNN, NCCL, PyTorch, etc that are all harmouniously compatible with each other in order to reduce depenency issue and provide a maximum of portability. The current version used is ```nvcr.io/nvidia/pytorch:23.09-py3```, which is based on CUDA 12.2.1 and PyTorch 2.1.0a0+32f93b1.
 If you need other specs you can consults the [Release Notes](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/index.html) and find the right base container for you.
-Once you found the right container you can alter the following line
 
+
+### Running the itwinai container
+
+There are currently three ways to execute the itwinai container on a SLURM cluster.
+
+1. Direct build on the HPC system
+2. Use build on the [itwinai repo](https://github.com/interTwin-eu/itwinai/pkgs/container/t6.5-ai-and-ml) and pull to HPC system
+3. Deploy to Kubernetes cluster and offload to HPC via [interLink](https://github.com/interTwin-eu/interLink)
+
+![container workflow](docs/docs/img/containers.png) 
+
+##### Direct build
+Run the following commands to build the container directly on the HPC system. Select the right base container by altering the following line 
 ```
 apptainer pull torch.sif docker://nvcr.io/nvidia/pytorch:23.09-py3
 ```
 inside ```containers/apptainer/apptainer_build.sh``` to change to the desired version.
 
-As mentioned above additional libraries are installed on top of the NGC container which are listed inside ```env-files/torch/pytorch-env-gpu-container.txt```.
-
-Once you are satisified with the libraries run:
+Install the itwinai libraries by running:
 ```
 ./containers/apptainer/apptainer_build.sh
 ```
 
-### Run the containers
+Run the startscript with 
+```
+sbatch use-cases/mnist/torch/startscript.sh
+```
+
+##### Github container repository build
+With this method you can just pull the ready container from the github container repository:
+```
+apptainer pull containers/apptainer/itwinai.sif docker://ghcr.io/intertwin-eu/t6.5-ai-and-ml:containers
+```
 
 Run the startscript with 
 ```
-sbatch startscript.sh
+sbatch use-cases/mnist/torch/startscript.sh
 ```
+
+##### InterLink
+To be tested
+
+
+
 
 
 ### Future work

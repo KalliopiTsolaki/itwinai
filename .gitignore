@@ -8,6 +8,7 @@ mamba*
 pl-training.yml
 *.pth
 *.csv
+*tar.gz
 
 # Use cases files
 MNIST
@@ -17,6 +18,7 @@ exp_data/
 
 # Custom envs
 .venv*
+envAI_hdfml/
 
 # Logs
 logs/
